@@ -68,11 +68,11 @@ Le tableau de bord se génère automatiquement avec vos données
 
 ### 🛠️ Technologies Utilisées
 
-HTML5 - Structure de la page  
-CSS3 - Styles et mise en page responsive  
-JavaScript ES6 - Logique applicative  
-Chart.js - Bibliothèque de graphiques interactifs  
-Papa Parse - Parsing des fichiers CSV
+HTML - Structure de la page  
+CSS - Styles et mise en page responsive  
+JavaScript - Logique applicative  
+Python - Optention et normalisation des données
+Jupyter Notebook - Visualisation des données
 
 ### 📊 Traitement des Données
 #### Gestion des Valeurs Manquantes
