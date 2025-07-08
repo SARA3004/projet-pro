@@ -71,7 +71,7 @@ Le tableau de bord se génère automatiquement avec vos données
 HTML - Structure de la page  
 CSS - Styles et mise en page responsive  
 JavaScript - Logique applicative  
-Python - Optention et normalisation des données  
+Python - Obtention et normalisation des données  
 Jupyter Notebook - Visualisation des données
 
 ### 📊 Traitement des Données
