@@ -107,3 +107,5 @@ Graphiques redimensionnables automatiquement
 |- films_final.csv              # Fichier CSV
 |- README.md                    # Explication du projet
 ```
+### Schéma d'obtention des données
+![Schéma obtention des données](image.png)
