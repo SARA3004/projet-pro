@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tableau de Bord Cinéma</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f9fafb;
+            color: #374151;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+        
+        .header {
+            margin-bottom: 32px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #111827;
+            margin-bottom: 8px;
+        }
+        
+        .header p {
+            color: #6b7280;
+            font-size: 1.1rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .stat-card h3 {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+        
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #111827;
+            margin-bottom: 4px;
+        }
+        
+        .stat-card .subtitle {
+            font-size: 0.875rem;
+            color: #9ca3af;
+        }
+        
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        
+        .chart-container {
+            background: white;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .chart-container h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #111827;
+        }
+        
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+        }
+        
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .file-input {
+            margin-bottom: 20px;
+            padding: 20px;
+            border: 2px dashed #d1d5db;
+            border-radius: 8px;
+            text-align: center;
+            background: white;
+        }
+        
+        .file-input input[type="file"] {
+            margin-bottom: 10px;
+        }
+        
+        .upload-btn {
+            background: #3b82f6;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .upload-btn:hover {
+            background: #2563eb;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+    </div>
+    
+    <div class="container">
+        <div class="file-input">
+            <h3>Charger le fichier CSV</h3>
+            <input type="file" id="csvFile" accept=".csv" />
+            <button class="upload-btn" onclick="loadCSV()">Charger les données</button>
+        </div>
+        
+        <div id="dashboard" class="hidden">
+            <div class="header">
+                <h1>Tableau de Bord Cinéma</h1>
+                <p>Analyse des données de films avec visualisations interactives</p>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Total Films</h3>
+                    <div class="value" id="totalMovies">-</div>
+                    <div class="subtitle">Films analysés</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Note Moyenne</h3>
+                    <div class="value" id="avgRating">-</div>
+                    <div class="subtitle">Évaluation globale</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Budget Total</h3>
+                    <div class="value" id="totalBudget">-</div>
+                    <div class="subtitle">Investissements</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Recettes Totales</h3>
+                    <div class="value" id="totalRevenue">-</div>
+                    <div class="subtitle">Box-office</div>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <h3>Distribution par Genre</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="genreChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <h3>ROI Moyen par Genre (%)</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="roiChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <h3>Répartition par Pays</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="countryChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <h3>Évolution par Année</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="yearChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <h3>Budget vs Recettes (Top 10 Films)</h3>
+                <div class="chart-wrapper">
+                    <canvas id="budgetRevenueChart"></canvas>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <h3>Top 10 des Genres par Recettes (B$)</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="genreRevenueChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <h3>Top 10 des Genres les Plus Rentables (%)</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="genreProfitChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <h3>Top 10 des Réalisateurs (Nombre de Films)</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="directorsChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <h3>Top 10 des Réalisateurs (Recettes Totales M$)</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="directorsRevenueChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <h3>Top des Acteurs ayant joué dans au moins 7 Films</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="actorsChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <h3>Top 10 des Acteurs (Recettes Totales M$)</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="actorsRevenueChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <h3>Top 10 des Genres avec le Moins de Recettes</h3>
+                <div class="chart-wrapper">
+                    <canvas id="genreLowRevenueChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let movieData = [];
+        let charts = {};
+
+        function loadCSV() {
+            const fileInput = document.getElementById('csvFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Veuillez sélectionner un fichier CSV');
+                return;
+            }
+
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('dashboard').classList.add('hidden');
+
+            Papa.parse(file, {
+                header: true,
+                dynamicTyping: true,
+                skipEmptyLines: true,
+                delimitersToGuess: [',', ';', '\t'],
+                complete: function(results) {
+                    // Nettoyer les données
+                    movieData = results.data.map(row => {
+                        const cleanRow = {};
+                        Object.keys(row).forEach(key => {
+                            const cleanKey = key.trim();
+                            cleanRow[cleanKey] = row[key];
+                        });
+                        return cleanRow;
+                    }).filter(row => row.ID || row.Titre);
+                    
+                    console.log('Données chargées:', movieData.length, 'films');
+                    console.log('Exemple:', movieData[0]);
+                    
+                    updateDashboard();
+                    document.getElementById('loading').classList.add('hidden');
+                    document.getElementById('dashboard').classList.remove('hidden');
+                },
+                error: function(error) {
+                    console.error('Erreur lors du parsing CSV:', error);
+                    alert('Erreur lors du chargement du fichier');
+                    document.getElementById('loading').classList.add('hidden');
+                }
+            });
+        }
+
+        function isValidValue(value) {
+            return value !== null && value !== undefined && value !== 0 && value !== '';
+        }
+
+        function updateDashboard() {
+            updateStatCards();
+            createCharts();
+        }
+
+        function updateStatCards() {
+            const totalMovies = movieData.length;
+            
+            // Calcul de la note moyenne en excluant les valeurs manquantes/nulles
+            const validRatings = movieData.filter(movie => isValidValue(movie.Note_moyenne));
+            const avgRating = validRatings.length > 0 ? 
+                (validRatings.reduce((sum, movie) => sum + movie.Note_moyenne, 0) / validRatings.length).toFixed(1) : 0;
+            
+            // Calcul du budget total en excluant les valeurs manquantes/nulles
+            const validBudgets = movieData.filter(movie => isValidValue(movie.Budget));
+            const totalBudget = validBudgets.reduce((sum, movie) => sum + movie.Budget, 0);
+            
+            // Calcul des recettes totales en excluant les valeurs manquantes/nulles
+            const validRevenues = movieData.filter(movie => isValidValue(movie.Recettes));
+            const totalRevenue = validRevenues.reduce((sum, movie) => sum + movie.Recettes, 0);
+
+            document.getElementById('totalMovies').textContent = totalMovies;
+            document.getElementById('avgRating').textContent = `${avgRating}/10`;
+            document.getElementById('totalBudget').textContent = `${(totalBudget/1000000000).toFixed(1)}B$`;
+            document.getElementById('totalRevenue').textContent = `${(totalRevenue/1000000000).toFixed(1)}B$`;
+        }
+
+        function processGenreData() {
+            const genreMap = {};
+            movieData.forEach(movie => {
+                if (movie.Genre) {
+                    let genres = movie.Genre.split(' ');
+                    
+                    // Traitement spécial pour Science-Fiction
+                    const processedGenres = [];
+                    for (let i = 0; i < genres.length; i++) {
+                        if (genres[i] === 'Science' && i + 1 < genres.length && genres[i + 1] === 'Fiction') {
+                            processedGenres.push('Science-Fiction');
+                            i++; // Skip the next element as it's part of Science-Fiction
+                        } else {
+                            processedGenres.push(genres[i]);
+                        }
+                    }
+                    
+                    processedGenres.forEach(genre => {
+                        if (!genreMap[genre]) {
+                            genreMap[genre] = { 
+                                count: 0, 
+                                totalBudget: 0, 
+                                totalRevenue: 0, 
+                                totalRating: 0, 
+                                totalVotes: 0,
+                                budgetCount: 0,
+                                revenueCount: 0,
+                                ratingCount: 0,
+                                votesCount: 0
+                            };
+                        }
+                        genreMap[genre].count++;
+                        
+                        if (isValidValue(movie.Budget)) {
+                            genreMap[genre].totalBudget += movie.Budget;
+                            genreMap[genre].budgetCount++;
+                        }
+                        if (isValidValue(movie.Recettes)) {
+                            genreMap[genre].totalRevenue += movie.Recettes;
+                            genreMap[genre].revenueCount++;
+                        }
+                        if (isValidValue(movie.Note_moyenne)) {
+                            genreMap[genre].totalRating += movie.Note_moyenne;
+                            genreMap[genre].ratingCount++;
+                        }
+                        if (isValidValue(movie.Votes)) {
+                            genreMap[genre].totalVotes += movie.Votes;
+                            genreMap[genre].votesCount++;
+                        }
+                    });
+                }
+            });
+            
+            return Object.entries(genreMap)
+                .map(([genre, stats]) => ({
+                    genre,
+                    count: stats.count,
+                    avgBudget: stats.budgetCount > 0 ? stats.totalBudget / stats.budgetCount : 0,
+                    avgRevenue: stats.revenueCount > 0 ? stats.totalRevenue / stats.revenueCount : 0,
+                    avgRating: stats.ratingCount > 0 ? stats.totalRating / stats.ratingCount : 0,
+                    avgVotes: stats.votesCount > 0 ? stats.totalVotes / stats.votesCount : 0,
+                    totalRevenue: stats.totalRevenue,
+                    totalProfit: stats.totalRevenue - stats.totalBudget,
+                    roi: stats.totalBudget > 0 ? (stats.totalRevenue / stats.totalBudget) * 100 : 0
+                }));
+        }
+
+        function processDirectorsData() {
+            const directorsMap = {};
+            movieData.forEach(movie => {
+                if (movie.Realisateurs) {
+                    const directors = movie.Realisateurs.split(',').map(d => d.trim());
+                    directors.forEach(director => {
+                        if (!directorsMap[director]) {
+                            directorsMap[director] = { 
+                                count: 0, 
+                                totalRevenue: 0, 
+                                totalRating: 0,
+                                revenueCount: 0,
+                                ratingCount: 0
+                            };
+                        }
+                        directorsMap[director].count++;
+                        
+                        if (isValidValue(movie.Recettes)) {
+                            directorsMap[director].totalRevenue += movie.Recettes;
+                            directorsMap[director].revenueCount++;
+                        }
+                        if (isValidValue(movie.Note_moyenne)) {
+                            directorsMap[director].totalRating += movie.Note_moyenne;
+                            directorsMap[director].ratingCount++;
+                        }
+                    });
+                }
+            });
+            
+            return Object.entries(directorsMap)
+                .map(([director, stats]) => ({
+                    director,
+                    count: stats.count,
+                    totalRevenue: stats.totalRevenue,
+                    avgRating: stats.ratingCount > 0 ? stats.totalRating / stats.ratingCount : 0
+                }));
+        }
+
+        function processActorsData() {
+            const actorsMap = {};
+            movieData.forEach(movie => {
+                if (movie.Acteurs_principaux) {
+                    const actors = movie.Acteurs_principaux.split(',').map(a => a.trim());
+                    actors.forEach(actor => {
+                        if (!actorsMap[actor]) {
+                            actorsMap[actor] = { 
+                                count: 0, 
+                                totalRevenue: 0, 
+                                totalRating: 0,
+                                revenueCount: 0,
+                                ratingCount: 0
+                            };
+                        }
+                        actorsMap[actor].count++;
+                        
+                        if (isValidValue(movie.Recettes)) {
+                            actorsMap[actor].totalRevenue += movie.Recettes;
+                            actorsMap[actor].revenueCount++;
+                        }
+                        if (isValidValue(movie.Note_moyenne)) {
+                            actorsMap[actor].totalRating += movie.Note_moyenne;
+                            actorsMap[actor].ratingCount++;
+                        }
+                    });
+                }
+            });
+            
+            return Object.entries(actorsMap)
+                .map(([actor, stats]) => ({
+                    actor,
+                    count: stats.count,
+                    totalRevenue: stats.totalRevenue,
+                    avgRating: stats.ratingCount > 0 ? stats.totalRating / stats.ratingCount : 0
+                }));
+        }
+
+        function processYearData() {
+            const yearMap = {};
+            movieData.forEach(movie => {
+                const year = movie.Date_sortie;
+                if (year) {
+                    if (!yearMap[year]) {
+                        yearMap[year] = { 
+                            count: 0, 
+                            totalBudget: 0, 
+                            totalRevenue: 0, 
+                            totalRating: 0,
+                            budgetCount: 0,
+                            revenueCount: 0,
+                            ratingCount: 0
+                        };
+                    }
+                    yearMap[year].count++;
+                    
+                    if (isValidValue(movie.Budget)) {
+                        yearMap[year].totalBudget += movie.Budget;
+                        yearMap[year].budgetCount++;
+                    }
+                    if (isValidValue(movie.Recettes)) {
+                        yearMap[year].totalRevenue += movie.Recettes;
+                        yearMap[year].revenueCount++;
+                    }
+                    if (isValidValue(movie.Note_moyenne)) {
+                        yearMap[year].totalRating += movie.Note_moyenne;
+                        yearMap[year].ratingCount++;
+                    }
+                }
+            });
+            
+            return Object.entries(yearMap)
+                .map(([year, stats]) => ({
+                    year: parseInt(year),
+                    count: stats.count,
+                    avgBudget: stats.budgetCount > 0 ? stats.totalBudget / stats.budgetCount : 0,
+                    avgRevenue: stats.revenueCount > 0 ? stats.totalRevenue / stats.revenueCount : 0,
+                    avgRating: stats.ratingCount > 0 ? stats.totalRating / stats.ratingCount : 0
+                }))
+                .sort((a, b) => a.year - b.year);
+        }
+
+        function processCountryData() {
+            const countryMap = {};
+            movieData.forEach(movie => {
+                if (movie.Pays_origine) {
+                    const countries = movie.Pays_origine.split(',').map(c => c.trim());
+                    countries.forEach(country => {
+                        if (!countryMap[country]) {
+                            countryMap[country] = 0;
+                        }
+                        countryMap[country]++;
+                    });
+                }
+            });
+            
+            return Object.entries(countryMap)
+                .map(([country, count]) => ({ country, count }))
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 6);
+        }
+
+        function processBudgetVsRevenue() {
+            return movieData
+                .filter(movie => isValidValue(movie.Budget) && isValidValue(movie.Recettes))
+                .map(movie => ({
+                    id: movie.ID,
+                    title: movie.Titre,
+                    budget: Math.round(movie.Budget / 1000000),
+                    revenue: Math.round(movie.Recettes / 1000000),
+                    rating: movie.Note_moyenne,
+                    roi: ((movie.Recettes - movie.Budget) / movie.Budget) * 100
+                }))
+                .sort((a, b) => b.revenue - a.revenue)
+                .slice(0, 10);
+        }
+
+        function createCharts() {
+            // Détruire les graphiques existants
+            Object.values(charts).forEach(chart => {
+                if (chart) chart.destroy();
+            });
+
+            const genreData = processGenreData();
+            const directorsData = processDirectorsData();
+            const actorsData = processActorsData();
+            const yearData = processYearData();
+            const countryData = processCountryData();
+            const budgetRevenueData = processBudgetVsRevenue();
+
+            // Graphique des genres
+            const genreCtx = document.getElementById('genreChart').getContext('2d');
+            charts.genre = new Chart(genreCtx, {
+                type: 'bar',
+                data: {
+                    labels: genreData.sort((a, b) => b.count - a.count).slice(0, 8).map(d => d.genre),
+                    datasets: [{
+                        label: 'Nombre de films',
+                        data: genreData.sort((a, b) => b.count - a.count).slice(0, 8).map(d => d.count),
+                        backgroundColor: '#3b82f6',
+                        borderColor: '#1e40af',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Graphique ROI
+            const roiCtx = document.getElementById('roiChart').getContext('2d');
+            const roiData = genreData.filter(d => d.roi > 0).sort((a, b) => b.roi - a.roi).slice(0, 8);
+            charts.roi = new Chart(roiCtx, {
+                type: 'bar',
+                data: {
+                    labels: roiData.map(d => d.genre),
+                    datasets: [{
+                        label: 'ROI (%)',
+                        data: roiData.map(d => d.roi),
+                        backgroundColor: '#10b981',
+                        borderColor: '#059669',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Graphique pays
+            const countryCtx = document.getElementById('countryChart').getContext('2d');
+            charts.country = new Chart(countryCtx, {
+                type: 'pie',
+                data: {
+                    labels: countryData.map(d => d.country),
+                    datasets: [{
+                        data: countryData.map(d => d.count),
+                        backgroundColor: [
+                            '#3b82f6',
+                            '#10b981',
+                            '#f59e0b',
+                            '#ef4444',
+                            '#8b5cf6',
+                            '#06b6d4'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+
+            // Graphique années
+            const yearCtx = document.getElementById('yearChart').getContext('2d');
+            charts.year = new Chart(yearCtx, {
+                type: 'line',
+                data: {
+                    labels: yearData.map(d => d.year),
+                    datasets: [{
+                        label: 'Nombre de films',
+                        data: yearData.map(d => d.count),
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Graphique budget vs recettes
+            const budgetRevenueCtx = document.getElementById('budgetRevenueChart').getContext('2d');
+            charts.budgetRevenue = new Chart(budgetRevenueCtx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Films',
+                        data: budgetRevenueData.map(d => ({ x: d.budget, y: d.revenue })),
+                        backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                        borderColor: '#3b82f6',
+                        pointRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const dataIndex = context.dataIndex;
+                                    const movie = budgetRevenueData[dataIndex];
+                                    return `ID: ${movie.id} - Budget: ${movie.budget}M$ - Recettes: ${movie.revenue}M$`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Budget (M$)'
+                            }
+                        },
+                        y: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Recettes (M$)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Top 10 des genres par recettes
+            const genreRevenueCtx = document.getElementById('genreRevenueChart').getContext('2d');
+            const genreRevenueData = genreData.filter(d => d.totalRevenue > 0).sort((a, b) => b.totalRevenue - a.totalRevenue).slice(0, 10);
+            charts.genreRevenue = new Chart(genreRevenueCtx, {
+                type: 'bar',
+                data: {
+                    labels: genreRevenueData.map(d => d.genre),
+                    datasets: [{
+                        label: 'Recettes totales (M$)',
+                        data: genreRevenueData.map(d => d.totalRevenue / 1000000),
+                        backgroundColor: '#f59e0b',
+                        borderColor: '#d97706',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Top 10 des genres les plus rentables (en pourcentage)
+            const genreProfitCtx = document.getElementById('genreProfitChart').getContext('2d');
+            const genreProfitData = genreData.filter(d => d.roi > 0).sort((a, b) => b.roi - a.roi).slice(0, 10);
+            charts.genreProfit = new Chart(genreProfitCtx, {
+                type: 'bar',
+                data: {
+                    labels: genreProfitData.map(d => d.genre),
+                    datasets: [{
+                        label: 'Rentabilité moyenne (%)',
+                        data: genreProfitData.map(d => d.roi),
+                        backgroundColor: '#10b981',
+                        borderColor: '#059669',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+                        // Top 10 des genres avec le moins de recettes
+            const genreLowRevenueCtx = document.getElementById('genreLowRevenueChart').getContext('2d');
+            const genreLowRevenueData = genreData.filter(d => d.totalRevenue > 0).sort((a, b) => a.totalRevenue - b.totalRevenue).slice(0, 10);
+            charts.genreLowRevenue = new Chart(genreLowRevenueCtx, {
+                type: 'bar',
+                data: {
+                    labels: genreLowRevenueData.map(d => d.genre),
+                    datasets: [{
+                        label: 'Recettes totales (M$)',
+                        data: genreLowRevenueData.map(d => d.totalRevenue / 1000000),
+                        backgroundColor: '#ef4444',
+                        borderColor: '#dc2626',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Top 10 des réalisateurs (nombre de films)
+            const directorsCtx = document.getElementById('directorsChart').getContext('2d');
+            const directorsCountData = directorsData.sort((a, b) => b.count - a.count).slice(0, 10);
+            charts.directors = new Chart(directorsCtx, {
+                type: 'bar',
+                data: {
+                    labels: directorsCountData.map(d => d.director),
+                    datasets: [{
+                        label: 'Nombre de films',
+                        data: directorsCountData.map(d => d.count),
+                        backgroundColor: '#8b5cf6',
+                        borderColor: '#7c3aed',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Top 10 des réalisateurs (recettes totales)
+            const directorsRevenueCtx = document.getElementById('directorsRevenueChart').getContext('2d');
+            const directorsRevenueData = directorsData.filter(d => d.totalRevenue > 0).sort((a, b) => b.totalRevenue - a.totalRevenue).slice(0, 10);
+            charts.directorsRevenue = new Chart(directorsRevenueCtx, {
+                type: 'bar',
+                data: {
+                    labels: directorsRevenueData.map(d => d.director),
+                    datasets: [{
+                        label: 'Recettes totales (M$)',
+                        data: directorsRevenueData.map(d => d.totalRevenue / 1000000),
+                        backgroundColor: '#06b6d4',
+                        borderColor: '#0891b2',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Top des acteurs (nombre de films)
+            const actorsCtx = document.getElementById('actorsChart').getContext('2d');
+            const actorsCountData = actorsData.filter(a => a.count >= 7).sort((a, b) => b.count - a.count);
+            charts.actors = new Chart(actorsCtx, {
+                type: 'bar',
+                data: {
+                    labels: actorsCountData.map(d => d.actor),
+                    datasets: [{
+                        label: 'Nombre de films',
+                        data: actorsCountData.map(d => d.count),
+                        backgroundColor: '#f59e0b',
+                        borderColor: '#d97706',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Top 10 des acteurs (recettes totales)
+            const actorsRevenueCtx = document.getElementById('actorsRevenueChart').getContext('2d');
+            const actorsRevenueData = actorsData.filter(d => d.totalRevenue > 0).sort((a, b) => b.totalRevenue - a.totalRevenue).slice(0, 10);
+            charts.actorsRevenue = new Chart(actorsRevenueCtx, {
+                type: 'bar',
+                data: {
+                    labels: actorsRevenueData.map(d => d.actor),
+                    datasets: [{
+                        label: 'Recettes totales (M$)',
+                        data: actorsRevenueData.map(d => d.totalRevenue / 1000000),
+                        backgroundColor: '#10b981',
+                        borderColor: '#059669',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // Cacher le spinner au chargement
+        document.getElementById('loading').classList.add('hidden');
+    </script>
+</body>
+</html>
