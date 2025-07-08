@@ -95,15 +95,15 @@ Graphiques redimensionnables automatiquement
 
 ### 📁 Structure du Projet
 ```
-|- Algo                     # Dossier contenant les scripts
-    |- film_cinema.py       # Filtre pour ne garder que les films sortis au cinéma
-    |- genres.py            # Normalisation des genres
-    |- merge.py             # Merge des différents fichier csv en un seul
-    |- recup_doc.py         # Recuppérer des données via API
-    |- scrapping.py         # Première version du scrapping
-    |- scrapping2.py        # Deuxième version du scrapping
-|- Analyse_Films.ipynb      # Création des graphiques
-|- Dashboard.html           # Visualisation des données
-|- films_final.csv          # Fichier CSV
-|- README.md                # Explication du projet
+|- Algo                         # Dossier contenant les scripts
+    |- film_cinema.py           # Filtre pour ne garder que les films sortis au cinéma
+    |- genres.py                # Normalisation des genres
+    |- merge.py                 # Merge des différents fichier csv en un seul
+    |- recup_doc.py             # Recuppérer des données via API
+    |- scrapping.py             # Première version du scrapping
+    |- scrapping2.py            # Deuxième version du scrapping
+|- analyse_Films_Final.ipynb    # Création des graphiques
+|- Dashboard.html               # Visualisation des données
+|- films_final.csv              # Fichier CSV
+|- README.md                    # Explication du projet
 ```
