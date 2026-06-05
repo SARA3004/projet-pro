@@ -32,7 +32,7 @@ traduction_genres = {
 def nettoyer_genres(genre_str):
     if pd.isna(genre_str) or genre_str.strip() == '':
         return ''
-    # Séparer les genres (on suppose séparés par espace ou virgule ou slash)
+    # Séparer les genres 
     genres = [g.strip() for g in re.split(r'[,\s/;]+', genre_str) if g.strip()]
     # Traduire et dédupliquer
     genres_traduits = []
