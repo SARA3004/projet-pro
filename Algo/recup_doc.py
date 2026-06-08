@@ -5,26 +5,25 @@ import os
 from tqdm import tqdm
 
 # Configuration
-API_KEYS = ['3efc75a7']  # Remplacez par vos vraies clés API
+API_KEYS = ['3efc75a7']  
 BASE_URL = 'http://www.omdbapi.com/'
 
-# Fichier source et fichier de sauvegarde
 input_file = 'films_cinema_2020_2025.csv'
 output_file = 'resultats_omdb2.csv'
 
-# Chargement des IDs
+
 df_ids = pd.read_csv(input_file)
 id_list = df_ids['tconst'].tolist()
 
-# Chargement ou initialisation des données sauvegardées
+
 if os.path.exists(output_file):
     df_saved = pd.read_csv(output_file)
     processed_ids = set(df_saved['ID'])
-    print(f"✅ {len(processed_ids)} IDs déjà récupérés, reprise en cours...")
+    print(f" {len(processed_ids)} IDs déjà récupérés, reprise en cours...")
 else:
     df_saved = pd.DataFrame()
     processed_ids = set()
-    print("🚀 Aucun fichier de sauvegarde trouvé, démarrage d'une nouvelle collecte...")
+    print(" Aucun fichier de sauvegarde trouvé, démarrage d'une nouvelle collecte...")
 
 # Fonction pour interroger l'API avec une clé donnée
 def fetch_movie_data(movie_id, api_key):
@@ -37,7 +36,7 @@ current_api_index = 0  # Index de la clé API en cours
 # Utilisation de tqdm pour la barre de progression
 for movie_id in tqdm(id_list, desc="Collecte des films", unit="film"):
     if movie_id in processed_ids:
-        continue  # Passer les films déjà traités
+        continue  
 
     while current_api_index < len(API_KEYS):
         current_api_key = API_KEYS[current_api_index]
@@ -46,17 +45,17 @@ for movie_id in tqdm(id_list, desc="Collecte des films", unit="film"):
 
             # Gestion des erreurs de quota
             if 'Error' in data and 'limit' in data['Error'].lower():
-                print(f"\n⛔ Quota atteint pour la clé {current_api_key}. Passage à la clé suivante...")
-                current_api_index += 1  # Passer à la clé suivante
+                print(f"\n Quota atteint pour la clé {current_api_key}. Passage à la clé suivante...")
+                current_api_index += 1 
                 if current_api_index >= len(API_KEYS):
-                    print("⛔ Toutes les clés ont atteint leur limite. Arrêt du script.")
+                    print(" Toutes les clés ont atteint leur limite. Arrêt du script.")
                     break
-                continue  # Essayer avec la clé suivante
+                continue  
 
             # Film non trouvé
             if data.get('Response') == 'False':
-                print(f"\n⚠️ Film non trouvé : {movie_id}")
-                break  # Passer au film suivant
+                print(f"\n Film non trouvé : {movie_id}")
+                break  
 
             # Filtrer les films selon l'année (garder 2020 et plus)
             year_str = data.get('Year', '')
@@ -66,8 +65,8 @@ for movie_id in tqdm(id_list, desc="Collecte des films", unit="film"):
                 year = int(year_str[:4]) if year_str[:4].isdigit() else None
 
             if year is None or year < 2020:
-                print(f"\nℹ️ Film {data.get('Title')} ({year_str}) ignoré (avant 2020).")
-                break  # Passer au film suivant
+                print(f"\nℹ Film {data.get('Title')} ({year_str}) ignoré (avant 2020).")
+                break  
             
             # Préparation des données
             film_data = {
@@ -96,17 +95,17 @@ for movie_id in tqdm(id_list, desc="Collecte des films", unit="film"):
             df_saved = pd.concat([df_saved, pd.DataFrame([film_data])], ignore_index=True)
             df_saved.to_csv(output_file, index=False)
 
-            print(f"\n✅ Film récupéré : {data.get('Title')}")
+            print(f"\nFilm récupéré : {data.get('Title')}")
             time.sleep(0.2)
-            break  # Passer au film suivant après succès
+            break 
 
         except Exception as e:
-            print(f"\n❌ Erreur : {e}")
-            break  # On arrête si c'est une erreur critique
+            print(f"\n Erreur : {e}")
+            break  
 
     else:
-        # Si toutes les clés ont été utilisées, on arrête la collecte
-        print("\n⛔ Fin du script : toutes les clés API sont épuisées.")
+        
+        print("\n Fin du script : toutes les clés API sont épuisées.")
         break
 
-print("\n📁 Sauvegarde terminée. Vous pouvez relancer le script demain pour continuer.")
+print("\n Sauvegarde terminée. Vous pouvez relancer le script demain pour continuer.")
